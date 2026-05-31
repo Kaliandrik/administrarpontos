@@ -2,15 +2,15 @@ import { useState, useEffect } from 'react'
 import './App.css'
 
 const ACCOUNTS = [
-  { id: 'aviator',              name: 'aviator',               email: 'aviatorvelasaltas@gmail.com' },
-  { id: 'garp',                 name: 'garp',                  email: 'garpbloxparcerias@gmail.com' },
-  { id: 'fzn',                  name: 'FZN',                   email: 'kaliandriksouza@gmail.com' },
-  { id: 'kaliankali',           name: 'kaliankali',            email: 'kaliankali001@gmail.com' },
-  { id: 'kaliandrik',           name: 'kaliandrik',            email: 'contatokaliandrik@gmail.com' },
-  { id: 'kaliandrik_a',         name: 'Kaliandrik A',          email: 'tralhadrey@gmail.com' },
-  { id: 'kaliandrik_0',         name: 'Kaliandrik 0',          email: 'kaliandrik15@gmail.com' },
-  { id: 'negociosinvestimentos', name: 'negociosinvestimentos', email: 'negociosivestimentos@gmail.com' },
-  { id: 'wastech',              name: 'wastech',               email: 'wasttech22@gmail.com' },
+  { id: 'aviator',               name: 'aviator',               email: 'aviatorvelasaltas@gmail.com' },
+  { id: 'garp',                  name: 'garp',                  email: 'garpbloxparcerias@gmail.com' },
+  { id: 'fzn',                   name: 'FZN',                   email: 'kaliandriksouza@gmail.com' },
+  { id: 'kaliankali',            name: 'kaliankali',            email: 'kaliankali001@gmail.com' },
+  { id: 'kaliandrik',            name: 'kaliandrik',            email: 'contatokaliandrik@gmail.com' },
+  { id: 'kaliandrik_a',          name: 'Kaliandrik A',          email: 'tralhadrey@gmail.com' },
+  { id: 'kaliandrik_0',          name: 'Kaliandrik 0',          email: 'kaliandrik15@gmail.com' },
+  { id: 'negociosinvestimentos',  name: 'negociosinvestimentos', email: 'negociosivestimentos@gmail.com' },
+  { id: 'wastech',               name: 'wastech',               email: 'wasttech22@gmail.com' },
 ]
 
 const MAX_POINTS = 60
@@ -52,10 +52,13 @@ function PointsBar({ points }) {
   const color = pct > 50 ? 'var(--green)' : pct > 20 ? 'var(--yellow)' : 'var(--red)'
   return (
     <div className="bar-wrap">
+      <div className="bar-meta">
+        <span className="bar-label" style={{ color }}>{points} pts</span>
+        <span className="bar-pct">{Math.round(pct)}%</span>
+      </div>
       <div className="bar-track">
         <div className="bar-fill" style={{ width: `${pct}%`, background: color }} />
       </div>
-      <span className="bar-label" style={{ color }}>{points}/{MAX_POINTS}</span>
     </div>
   )
 }
@@ -99,6 +102,7 @@ function AccountCard({ account, state, onUse }) {
 
       {timer && (
         <div className="reset-row">
+          <span className="reset-icon">⟳</span>
           <span className="reset-label">reset em</span>
           <span className="reset-timer">{timer}</span>
         </div>
@@ -120,6 +124,62 @@ function AccountCard({ account, state, onUse }) {
         </button>
       </div>
     </div>
+  )
+}
+
+function Reminders() {
+  const [items, setItems] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('pixverse_reminders') || '[]') } catch { return [] }
+  })
+  const [input, setInput] = useState('')
+
+  function add() {
+    const text = input.trim()
+    if (!text) return
+    const next = [...items, { id: Date.now(), text }]
+    setItems(next)
+    localStorage.setItem('pixverse_reminders', JSON.stringify(next))
+    setInput('')
+  }
+
+  function remove(id) {
+    const next = items.filter(i => i.id !== id)
+    setItems(next)
+    localStorage.setItem('pixverse_reminders', JSON.stringify(next))
+  }
+
+  return (
+    <section className="reminders">
+      <div className="reminders-header">
+        <span className="reminders-title">lembretes</span>
+        <span className="reminders-count">{items.length}</span>
+      </div>
+
+      <div className="reminders-input-row">
+        <input
+          type="text"
+          placeholder="adicionar lembrete..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && add()}
+        />
+        <button onClick={add}>+ adicionar</button>
+      </div>
+
+      {items.length === 0 && (
+        <p className="reminders-empty">nenhum lembrete ainda</p>
+      )}
+
+      <ul className="reminders-list">
+        {items.map(item => (
+          <li key={item.id} className="reminder-item">
+            <span className="reminder-dot">▸</span>
+            <span className="reminder-text">{item.text}</span>
+            <button className="reminder-delete" onClick={() => remove(item.id)}>✕</button>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -186,6 +246,8 @@ export default function App() {
           />
         ))}
       </main>
+
+      <Reminders />
     </div>
   )
 }
