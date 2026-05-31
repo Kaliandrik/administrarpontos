@@ -1,0 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Rajdhani:wght@500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #07070d;
+  --surface: #0f0f18;
+  --surface2: #14141f;
+  --surface3: #1c1c2a;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --accent: #8b6fcb;
+  --accent-soft: rgba(139,111,203,0.12);
+  --accent-glow: rgba(139,111,203,0.25);
+  --green: #56d98d;
+  --green-soft: rgba(86,217,141,0.1);
+  --yellow: #f5c842;
+  --yellow-soft: rgba(245,200,66,0.1);
+  --red: #f06b6b;
+  --red-soft: rgba(240,107,107,0.1);
+  --text: #ededf5;
+  --text2: #9898ae;
+  --text3: #55556a;
+  --font-num: 'Rajdhani', sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'JetBrains Mono', monospace;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { min-height: 100vh; }
