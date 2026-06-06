@@ -63,7 +63,7 @@ function PointsBar({ points }) {
   )
 }
 
-function AccountCard({ account, state, onUse }) {
+function AccountCard({ account, state, onUse, onReset }) {
   const [input, setInput] = useState('')
   const [timer, setTimer] = useState(() => timeUntilReset(state.lastUsed))
   const pct = (state.points / MAX_POINTS) * 100
@@ -86,6 +86,8 @@ function AccountCard({ account, state, onUse }) {
     setInput('')
   }
 
+  const isFull = state.points === MAX_POINTS && !state.lastUsed
+
   return (
     <div className={`card status-${statusColor}`}>
       <div className="card-header">
@@ -93,8 +95,15 @@ function AccountCard({ account, state, onUse }) {
           <p className="card-name">{account.name}</p>
           <p className="card-email">{account.email}</p>
         </div>
-        <div className={`badge badge-${statusColor}`}>
-          {state.points === MAX_POINTS && !state.lastUsed ? 'FULL' : state.points === 0 ? 'VAZIO' : 'ATIVO'}
+        <div className="card-header-right">
+          <div className={`badge badge-${statusColor}`}>
+            {isFull ? 'FULL' : state.points === 0 ? 'VAZIO' : 'ATIVO'}
+          </div>
+          {!isFull && (
+            <button className="reset-btn" onClick={() => onReset(account.id)} title="Resetar pontos">
+              ↺
+            </button>
+          )}
         </div>
       </div>
 
@@ -133,26 +142,38 @@ function Reminders() {
   })
   const [input, setInput] = useState('')
 
+  function save(next) {
+    setItems(next)
+    localStorage.setItem('pixverse_reminders', JSON.stringify(next))
+  }
+
   function add() {
     const text = input.trim()
     if (!text) return
-    const next = [...items, { id: Date.now(), text }]
-    setItems(next)
-    localStorage.setItem('pixverse_reminders', JSON.stringify(next))
+    save([...items, { id: Date.now(), text, pinned: false }])
     setInput('')
   }
 
   function remove(id) {
-    const next = items.filter(i => i.id !== id)
-    setItems(next)
-    localStorage.setItem('pixverse_reminders', JSON.stringify(next))
+    save(items.filter(i => i.id !== id))
   }
+
+  function togglePin(id) {
+    save(items.map(i => i.id === id ? { ...i, pinned: !i.pinned } : i))
+  }
+
+  const pinned = items.filter(i => i.pinned)
+  const normal = items.filter(i => !i.pinned)
+  const sorted = [...pinned, ...normal]
 
   return (
     <section className="reminders">
       <div className="reminders-header">
         <span className="reminders-title">lembretes</span>
         <span className="reminders-count">{items.length}</span>
+        {pinned.length > 0 && (
+          <span className="reminders-pinned-count">📌 {pinned.length} fixado{pinned.length > 1 ? 's' : ''}</span>
+        )}
       </div>
 
       <div className="reminders-input-row">
@@ -171,10 +192,17 @@ function Reminders() {
       )}
 
       <ul className="reminders-list">
-        {items.map(item => (
-          <li key={item.id} className="reminder-item">
+        {sorted.map(item => (
+          <li key={item.id} className={`reminder-item ${item.pinned ? 'reminder-pinned' : ''}`}>
             <span className="reminder-dot">▸</span>
             <span className="reminder-text">{item.text}</span>
+            <button
+              className={`reminder-pin ${item.pinned ? 'reminder-pin-active' : ''}`}
+              onClick={() => togglePin(item.id)}
+              title={item.pinned ? 'Desafixar' : 'Fixar'}
+            >
+              📌
+            </button>
             <button className="reminder-delete" onClick={() => remove(item.id)}>✕</button>
           </li>
         ))}
@@ -201,6 +229,14 @@ export default function App() {
           lastUsed: cur.lastUsed ?? Date.now(),
         }
       }
+      saveState(next)
+      return next
+    })
+  }
+
+  function handleReset(id) {
+    setStored(prev => {
+      const next = { ...prev, [id]: { points: MAX_POINTS, lastUsed: null } }
       saveState(next)
       return next
     })
@@ -243,6 +279,7 @@ export default function App() {
             account={acc}
             state={states[i]}
             onUse={handleUse}
+            onReset={handleReset}
           />
         ))}
       </main>

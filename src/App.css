@@ -460,3 +460,59 @@
   color: var(--red);
   background: var(--red-soft);
 }
+
+/* ─── RESET BTN ───────────────────────────────────────── */
+.card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.reset-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text3);
+  font-size: 0.85rem;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s, background 0.2s;
+  line-height: 1;
+}
+
+.reset-btn:hover {
+  color: var(--green);
+  border-color: rgba(86,217,141,0.4);
+  background: var(--green-soft);
+}
+
+/* ─── PIN ─────────────────────────────────────────────── */
+.reminder-pinned {
+  border-color: rgba(139,111,203,0.35) !important;
+  background: var(--accent-soft) !important;
+}
+
+.reminder-pin {
+  background: none;
+  border: none;
+  font-size: 0.7rem;
+  cursor: pointer;
+  padding: 0.2rem 0.3rem;
+  border-radius: 6px;
+  opacity: 0.3;
+  transition: opacity 0.2s, background 0.2s;
+  flex-shrink: 0;
+}
+
+.reminder-pin:hover { opacity: 0.8; }
+.reminder-pin-active { opacity: 1 !important; }
+
+.reminders-pinned-count {
+  font-size: 0.62rem;
+  color: var(--accent);
+  letter-spacing: 0.06em;
+}
