@@ -34,6 +34,89 @@ function PlatformBadge({ platform, checked, onChange }) {
   )
 }
 
+function PostCard({ post, statusClass, allDone, noneDone, onDelete, onTogglePlatform, onSaveCaption }) {
+  const [captionMode, setCaptionMode] = useState(null) // null | 'edit' | 'view'
+  const [draftCaption, setDraftCaption] = useState(post.legenda || '')
+
+  function handleOpenEdit() {
+    setDraftCaption(post.legenda || '')
+    setCaptionMode('edit')
+  }
+
+  function handleSave() {
+    onSaveCaption(post.id, draftCaption)
+    setCaptionMode(null)
+  }
+
+  function handleCancel() {
+    setDraftCaption(post.legenda || '')
+    setCaptionMode(null)
+  }
+
+  return (
+    <div className={`post-card ${statusClass}`}>
+      <div className="post-header">
+        <span className="post-name">{post.name}</span>
+        <div className="post-header-right">
+          {allDone  && <span className="post-badge post-badge--done">completo</span>}
+          {noneDone && <span className="post-badge post-badge--pending">pendente</span>}
+          {!allDone && !noneDone && <span className="post-badge post-badge--partial">parcial</span>}
+          <button className="post-delete" onClick={() => onDelete(post.id)} title="Deletar post">✕</button>
+        </div>
+      </div>
+
+      <div className="post-platforms">
+        {PLATFORMS.map(pl => (
+          <PlatformBadge
+            key={pl.id}
+            platform={pl}
+            checked={post[pl.id]}
+            onChange={v => onTogglePlatform(post.id, pl.id, v)}
+          />
+        ))}
+      </div>
+
+      <div className="post-caption-row">
+        <button className="caption-toggle-btn" onClick={handleOpenEdit}>
+          ✏ legenda do post
+          {post.legenda && <span className="caption-saved-dot" title="legenda salva" />}
+        </button>
+        {post.legenda && captionMode !== 'edit' && (
+          <button
+            className="caption-view-btn"
+            onClick={() => setCaptionMode(captionMode === 'view' ? null : 'view')}
+          >
+            {captionMode === 'view' ? '▲ ocultar' : '▼ visualizar legenda'}
+          </button>
+        )}
+      </div>
+
+      {captionMode === 'edit' && (
+        <div className="caption-editor">
+          <textarea
+            className="caption-textarea"
+            value={draftCaption}
+            onChange={e => setDraftCaption(e.target.value)}
+            placeholder="escreva a legenda do post aqui..."
+            autoFocus
+            rows={6}
+          />
+          <div className="caption-actions">
+            <button className="caption-save-btn" onClick={handleSave}>salvar</button>
+            <button className="caption-cancel-btn" onClick={handleCancel}>cancelar</button>
+          </div>
+        </div>
+      )}
+
+      {captionMode === 'view' && post.legenda && (
+        <div className="caption-viewer">
+          <p className="caption-viewer-text">{post.legenda}</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function PostsPage() {
   const [posts, setPosts] = useState(loadPosts)
   const [input, setInput] = useState('')
@@ -58,6 +141,12 @@ function PostsPage() {
 
   function togglePlatform(id, platform, value) {
     const next = posts.map(p => p.id === id ? { ...p, [platform]: value } : p)
+    setPosts(next)
+    savePosts(next)
+  }
+
+  function saveCaption(id, text) {
+    const next = posts.map(p => p.id === id ? { ...p, legenda: text } : p)
     setPosts(next)
     savePosts(next)
   }
@@ -113,27 +202,16 @@ function PostsPage() {
           const statusClass = allDone ? 'post-done' : noneDone ? 'post-pending' : 'post-partial'
 
           return (
-            <div key={post.id} className={`post-card ${statusClass}`}>
-              <div className="post-header">
-                <span className="post-name">{post.name}</span>
-                <div className="post-header-right">
-                  {allDone  && <span className="post-badge post-badge--done">completo</span>}
-                  {noneDone && <span className="post-badge post-badge--pending">pendente</span>}
-                  {!allDone && !noneDone && <span className="post-badge post-badge--partial">parcial</span>}
-                  <button className="post-delete" onClick={() => deletePost(post.id)} title="Deletar post">✕</button>
-                </div>
-              </div>
-              <div className="post-platforms">
-                {PLATFORMS.map(pl => (
-                  <PlatformBadge
-                    key={pl.id}
-                    platform={pl}
-                    checked={post[pl.id]}
-                    onChange={v => togglePlatform(post.id, pl.id, v)}
-                  />
-                ))}
-              </div>
-            </div>
+            <PostCard
+              key={post.id}
+              post={post}
+              statusClass={statusClass}
+              allDone={allDone}
+              noneDone={noneDone}
+              onDelete={deletePost}
+              onTogglePlatform={togglePlatform}
+              onSaveCaption={saveCaption}
+            />
           )
         })}
       </div>
