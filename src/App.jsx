@@ -1,6 +1,148 @@
 import { useState, useEffect } from 'react'
 import './App.css'
 
+// ─── POSTS PAGE ──────────────────────────────────────────────────────────────
+
+const PLATFORMS = [
+  { id: 'youtube',   label: 'YouTube',   color: '#FF4040', icon: '▶' },
+  { id: 'tiktok',    label: 'TikTok',    color: '#69C9D0', icon: '♪' },
+  { id: 'facebook',  label: 'Facebook',  color: '#1877F2', icon: 'f' },
+  { id: 'instagram', label: 'Instagram', color: '#E1306C', icon: '◉' },
+]
+
+const POSTS_KEY = 'pixverse_posts'
+
+function loadPosts() {
+  try { return JSON.parse(localStorage.getItem(POSTS_KEY) || '[]') } catch { return [] }
+}
+function savePosts(posts) {
+  localStorage.setItem(POSTS_KEY, JSON.stringify(posts))
+}
+
+function PlatformBadge({ platform, checked, onChange }) {
+  return (
+    <button
+      className={`platform-badge ${checked ? 'platform-badge--on' : ''}`}
+      style={{ '--badge-color': platform.color }}
+      onClick={() => onChange(!checked)}
+      title={`Marcar como postado no ${platform.label}`}
+    >
+      <span className="platform-icon">{platform.icon}</span>
+      <span className="platform-name">{platform.label}</span>
+      {checked && <span className="platform-check">✓</span>}
+    </button>
+  )
+}
+
+function PostsPage() {
+  const [posts, setPosts] = useState(loadPosts)
+  const [input, setInput] = useState('')
+
+  function addPost() {
+    const name = input.trim()
+    if (!name) return
+    const next = [
+      ...posts,
+      { id: Date.now(), name, youtube: false, tiktok: false, facebook: false, instagram: false }
+    ]
+    setPosts(next)
+    savePosts(next)
+    setInput('')
+  }
+
+  function deletePost(id) {
+    const next = posts.filter(p => p.id !== id)
+    setPosts(next)
+    savePosts(next)
+  }
+
+  function togglePlatform(id, platform, value) {
+    const next = posts.map(p => p.id === id ? { ...p, [platform]: value } : p)
+    setPosts(next)
+    savePosts(next)
+  }
+
+  const totalPosted  = posts.filter(p =>  p.youtube &&  p.tiktok &&  p.facebook &&  p.instagram).length
+  const totalPartial = posts.filter(p => (p.youtube ||  p.tiktok ||  p.facebook ||  p.instagram) && !(p.youtube && p.tiktok && p.facebook && p.instagram)).length
+  const totalPending = posts.filter(p => !p.youtube && !p.tiktok && !p.facebook && !p.instagram).length
+
+  return (
+    <div className="posts-page">
+      <div className="posts-stats">
+        <div className="stat">
+          <span className="stat-val">{posts.length}</span>
+          <span className="stat-key">posts</span>
+        </div>
+        <div className="stat">
+          <span className="stat-val" style={{ color: 'var(--green)' }}>{totalPosted}</span>
+          <span className="stat-key">completos</span>
+        </div>
+        <div className="stat">
+          <span className="stat-val" style={{ color: 'var(--yellow)' }}>{totalPartial}</span>
+          <span className="stat-key">parciais</span>
+        </div>
+        <div className="stat">
+          <span className="stat-val" style={{ color: 'var(--red)' }}>{totalPending}</span>
+          <span className="stat-key">pendentes</span>
+        </div>
+      </div>
+
+      <div className="posts-add">
+        <input
+          type="text"
+          placeholder="nome do post..."
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && addPost()}
+          className="posts-input"
+        />
+        <button onClick={addPost} className="posts-add-btn">+ adicionar</button>
+      </div>
+
+      {posts.length === 0 && (
+        <div className="posts-empty">
+          <p>nenhum post ainda.</p>
+          <p>adicione um nome acima para começar.</p>
+        </div>
+      )}
+
+      <div className="posts-list">
+        {posts.map(post => {
+          const allDone  = post.youtube && post.tiktok && post.facebook && post.instagram
+          const noneDone = !post.youtube && !post.tiktok && !post.facebook && !post.instagram
+          const statusClass = allDone ? 'post-done' : noneDone ? 'post-pending' : 'post-partial'
+
+          return (
+            <div key={post.id} className={`post-card ${statusClass}`}>
+              <div className="post-header">
+                <span className="post-name">{post.name}</span>
+                <div className="post-header-right">
+                  {allDone  && <span className="post-badge post-badge--done">completo</span>}
+                  {noneDone && <span className="post-badge post-badge--pending">pendente</span>}
+                  {!allDone && !noneDone && <span className="post-badge post-badge--partial">parcial</span>}
+                  <button className="post-delete" onClick={() => deletePost(post.id)} title="Deletar post">✕</button>
+                </div>
+              </div>
+              <div className="post-platforms">
+                {PLATFORMS.map(pl => (
+                  <PlatformBadge
+                    key={pl.id}
+                    platform={pl}
+                    checked={post[pl.id]}
+                    onChange={v => togglePlatform(post.id, pl.id, v)}
+                  />
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── ACCOUNTS PAGE (original) ────────────────────────────────────────────────
+
 const ACCOUNTS = [
   { id: 'aviator',               name: 'aviator',               email: 'aviatorvelasaltas@gmail.com' },
   { id: 'garp',                  name: 'garp',                  email: 'garpbloxparcerias@gmail.com' },
@@ -154,9 +296,7 @@ function Reminders() {
     setInput('')
   }
 
-  function remove(id) {
-    save(items.filter(i => i.id !== id))
-  }
+  function remove(id) { save(items.filter(i => i.id !== id)) }
 
   function togglePin(id) {
     save(items.map(i => i.id === id ? { ...i, pinned: !i.pinned } : i))
@@ -175,7 +315,6 @@ function Reminders() {
           <span className="reminders-pinned-count">📌 {pinned.length} fixado{pinned.length > 1 ? 's' : ''}</span>
         )}
       </div>
-
       <div className="reminders-input-row">
         <input
           type="text"
@@ -186,11 +325,7 @@ function Reminders() {
         />
         <button onClick={add}>+ adicionar</button>
       </div>
-
-      {items.length === 0 && (
-        <p className="reminders-empty">nenhum lembrete ainda</p>
-      )}
-
+      {items.length === 0 && <p className="reminders-empty">nenhum lembrete ainda</p>}
       <ul className="reminders-list">
         {sorted.map(item => (
           <li key={item.id} className={`reminder-item ${item.pinned ? 'reminder-pinned' : ''}`}>
@@ -200,9 +335,7 @@ function Reminders() {
               className={`reminder-pin ${item.pinned ? 'reminder-pin-active' : ''}`}
               onClick={() => togglePin(item.id)}
               title={item.pinned ? 'Desafixar' : 'Fixar'}
-            >
-              📌
-            </button>
+            >📌</button>
             <button className="reminder-delete" onClick={() => remove(item.id)}>✕</button>
           </li>
         ))}
@@ -211,7 +344,10 @@ function Reminders() {
   )
 }
 
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+
 export default function App() {
+  const [page, setPage]     = useState('accounts') // 'accounts' | 'posts'
   const [stored, setStored] = useState(loadState)
 
   useEffect(() => {
@@ -221,11 +357,11 @@ export default function App() {
 
   function handleUse(id, amount) {
     setStored(prev => {
-      const cur = getAccountState(prev, id)
+      const cur  = getAccountState(prev, id)
       const next = {
         ...prev,
         [id]: {
-          points: Math.max(0, cur.points - amount),
+          points:   Math.max(0, cur.points - amount),
           lastUsed: cur.lastUsed ?? Date.now(),
         }
       }
@@ -242,9 +378,9 @@ export default function App() {
     })
   }
 
-  const states = ACCOUNTS.map(a => getAccountState(stored, a.id))
+  const states     = ACCOUNTS.map(a => getAccountState(stored, a.id))
   const totalAvail = states.reduce((s, a) => s + a.points, 0)
-  const totalMax = ACCOUNTS.length * MAX_POINTS
+  const totalMax   = ACCOUNTS.length * MAX_POINTS
 
   return (
     <div className="app">
@@ -256,35 +392,58 @@ export default function App() {
             <p>gerenciador de contas</p>
           </div>
         </div>
-        <div className="header-stats">
-          <div className="stat">
-            <span className="stat-val">{totalAvail}</span>
-            <span className="stat-key">pts disponíveis</span>
+
+        <nav className="header-nav">
+          <button
+            className={`nav-btn ${page === 'accounts' ? 'nav-btn--active' : ''}`}
+            onClick={() => setPage('accounts')}
+          >
+            contas
+          </button>
+          <button
+            className={`nav-btn ${page === 'posts' ? 'nav-btn--active' : ''}`}
+            onClick={() => setPage('posts')}
+          >
+            análise de posts
+          </button>
+        </nav>
+
+        {page === 'accounts' && (
+          <div className="header-stats">
+            <div className="stat">
+              <span className="stat-val">{totalAvail}</span>
+              <span className="stat-key">pts disponíveis</span>
+            </div>
+            <div className="stat">
+              <span className="stat-val">{ACCOUNTS.length}</span>
+              <span className="stat-key">contas</span>
+            </div>
+            <div className="stat">
+              <span className="stat-val">{Math.round((totalAvail / totalMax) * 100)}%</span>
+              <span className="stat-key">capacidade</span>
+            </div>
           </div>
-          <div className="stat">
-            <span className="stat-val">{ACCOUNTS.length}</span>
-            <span className="stat-key">contas</span>
-          </div>
-          <div className="stat">
-            <span className="stat-val">{Math.round((totalAvail/totalMax)*100)}%</span>
-            <span className="stat-key">capacidade</span>
-          </div>
-        </div>
+        )}
       </header>
 
-      <main className="grid">
-        {ACCOUNTS.map((acc, i) => (
-          <AccountCard
-            key={acc.id}
-            account={acc}
-            state={states[i]}
-            onUse={handleUse}
-            onReset={handleReset}
-          />
-        ))}
-      </main>
+      {page === 'accounts' && (
+        <>
+          <main className="grid">
+            {ACCOUNTS.map((acc, i) => (
+              <AccountCard
+                key={acc.id}
+                account={acc}
+                state={states[i]}
+                onUse={handleUse}
+                onReset={handleReset}
+              />
+            ))}
+          </main>
+          <Reminders />
+        </>
+      )}
 
-      <Reminders />
+      {page === 'posts' && <PostsPage />}
     </div>
   )
 }
