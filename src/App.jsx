@@ -361,6 +361,9 @@ function Reminders() {
     try { return JSON.parse(localStorage.getItem('pixverse_reminders') || '[]') } catch { return [] }
   })
   const [input, setInput] = useState('')
+  const [editingId, setEditingId] = useState(null)
+  const [editText, setEditText] = useState('')
+  const [copiedId, setCopiedId] = useState(null)
 
   function save(next) {
     setItems(next)
@@ -375,6 +378,38 @@ function Reminders() {
   }
 
   function remove(id) { save(items.filter(i => i.id !== id)) }
+
+  function startEdit(item) {
+    setEditingId(item.id)
+    setEditText(item.text)
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditText('')
+  }
+
+  function saveEdit() {
+    const text = editText.trim()
+    if (!text) return
+    save(items.map(i => i.id === editingId ? { ...i, text } : i))
+    cancelEdit()
+  }
+
+  async function copy(item) {
+    try {
+      await navigator.clipboard.writeText(item.text)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = item.text
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      ta.remove()
+    }
+    setCopiedId(item.id)
+    setTimeout(() => setCopiedId(id => (id === item.id ? null : id)), 1500)
+  }
 
   function togglePin(id) {
     save(items.map(i => i.id === id ? { ...i, pinned: !i.pinned } : i))
@@ -408,13 +443,52 @@ function Reminders() {
         {sorted.map(item => (
           <li key={item.id} className={`reminder-item ${item.pinned ? 'reminder-pinned' : ''}`}>
             <span className="reminder-dot">▸</span>
-            <span className="reminder-text">{item.text}</span>
-            <button
-              className={`reminder-pin ${item.pinned ? 'reminder-pin-active' : ''}`}
-              onClick={() => togglePin(item.id)}
-              title={item.pinned ? 'Desafixar' : 'Fixar'}
-            >📌</button>
-            <button className="reminder-delete" onClick={() => remove(item.id)}>✕</button>
+            {editingId === item.id ? (
+              <>
+                <input
+                  className="reminder-edit-input"
+                  type="text"
+                  value={editText}
+                  autoFocus
+                  onChange={e => setEditText(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') saveEdit()
+                    if (e.key === 'Escape') cancelEdit()
+                  }}
+                />
+                <button
+                  className="reminder-action reminder-action-save"
+                  onClick={saveEdit}
+                  disabled={!editText.trim()}
+                  title="Salvar"
+                >✓</button>
+                <button className="reminder-action" onClick={cancelEdit} title="Cancelar">✕</button>
+              </>
+            ) : (
+              <>
+                <span className="reminder-text">{item.text}</span>
+                <button
+                  className={`reminder-action ${copiedId === item.id ? 'reminder-action-copied' : ''}`}
+                  onClick={() => copy(item)}
+                  title={copiedId === item.id ? 'Copiado!' : 'Copiar'}
+                >
+                  {copiedId === item.id ? (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                  ) : (
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
+                  )}
+                </button>
+                <button className="reminder-action" onClick={() => startEdit(item)} title="Editar">
+                  <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                </button>
+                <button
+                  className={`reminder-pin ${item.pinned ? 'reminder-pin-active' : ''}`}
+                  onClick={() => togglePin(item.id)}
+                  title={item.pinned ? 'Desafixar' : 'Fixar'}
+                >📌</button>
+                <button className="reminder-delete" onClick={() => remove(item.id)}>✕</button>
+              </>
+            )}
           </li>
         ))}
       </ul>
